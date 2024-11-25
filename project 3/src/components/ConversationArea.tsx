@@ -1,55 +1,51 @@
-import React from 'react';
-import { User, Bot } from 'lucide-react';
+import React, { useState } from 'react';
+import { callOpenAI } from '../utils/openaiClient';
 
-interface Message {
-  text: string;
-  type: 'user' | 'ai';
-  timestamp: Date;
-}
+const ConversationArea: React.FC = () => {
+  const [input, setInput] = useState('');
+  const [messages, setMessages] = useState<{ user: string; bot: string }[]>([]);
+  const apiKey = 'your-openai-api-key'; // Replace with a secure method for storing your key
 
-interface Props {
-  messages: Message[];
-}
+  const handleSend = async () => {
+    if (!input.trim()) return;
 
-export default function ConversationArea({ messages }: Props) {
+    const userMessage = input.trim();
+    setMessages([...messages, { user: userMessage, bot: '...' }]);
+
+    try {
+      const botResponse = await callOpenAI(userMessage, apiKey);
+      setMessages((prev) => [...prev.slice(0, -1), { user: userMessage, bot: botResponse }]);
+    } catch (error) {
+      console.error('Error fetching response:', error);
+      setMessages((prev) => [...prev.slice(0, -1), { user: userMessage, bot: 'Error fetching response.' }]);
+    }
+
+    setInput('');
+  };
+
   return (
-    <div className="flex-1 overflow-y-auto p-4 space-y-4">
-      {messages.map((message, index) => (
-        <div
-          key={index}
-          className={`flex ${
-            message.type === 'user' ? 'justify-end' : 'justify-start'
-          }`}
-        >
-          <div
-            className={`flex items-start space-x-2 max-w-[70%] ${
-              message.type === 'user'
-                ? 'flex-row-reverse space-x-reverse'
-                : 'flex-row'
-            }`}
-          >
-            <div
-              className={`p-2 rounded-lg ${
-                message.type === 'user'
-                  ? 'bg-blue-600 text-white'
-                  : 'bg-gray-100 text-gray-800'
-              }`}
-            >
-              <div className="flex items-center space-x-2 mb-1">
-                {message.type === 'user' ? (
-                  <User className="w-4 h-4" />
-                ) : (
-                  <Bot className="w-4 h-4" />
-                )}
-                <span className="text-xs opacity-75">
-                  {message.timestamp.toLocaleTimeString()}
-                </span>
-              </div>
-              <p className="text-sm">{message.text}</p>
-            </div>
+    <div className="p-4 bg-white rounded-md shadow-md">
+      <div className="mb-4 h-64 overflow-y-auto bg-gray-100 p-2 rounded-md">
+        {messages.map((msg, index) => (
+          <div key={index} className="mb-2">
+            <p className="text-blue-600 font-bold">You: {msg.user}</p>
+            <p className="text-gray-800">Bot: {msg.bot}</p>
           </div>
-        </div>
-      ))}
+        ))}
+      </div>
+      <div className="flex">
+        <input
+          className="flex-grow p-2 border border-gray-300 rounded-md focus:outline-none focus:ring focus:ring-primary"
+          value={input}
+          onChange={(e) => setInput(e.target.value)}
+          placeholder="Type your message here..."
+        />
+        <button onClick={handleSend} className="ml-2">
+          Send
+        </button>
+      </div>
     </div>
   );
-}
+};
+
+export default ConversationArea;
