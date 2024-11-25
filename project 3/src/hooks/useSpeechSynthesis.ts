@@ -1,21 +1,21 @@
-import { useCallback } from 'react';
+import { useState } from 'react';
 
-export function useSpeechSynthesis() {
-  const speak = useCallback((text: string) => {
-    if ('speechSynthesis' in window) {
-      const utterance = new SpeechSynthesisUtterance(text);
-      utterance.lang = 'en-US';
-      utterance.rate = 1;
-      utterance.pitch = 1;
-      window.speechSynthesis.speak(utterance);
-    }
-  }, []);
+const useSpeechSynthesis = () => {
+  const [isSpeaking, setIsSpeaking] = useState(false);
 
-  const stop = useCallback(() => {
-    if ('speechSynthesis' in window) {
-      window.speechSynthesis.cancel();
-    }
-  }, []);
+  const speak = (text: string) => {
+    const synth = window.speechSynthesis;
+    const utterance = new SpeechSynthesisUtterance(text);
+    setIsSpeaking(true);
 
-  return { speak, stop };
-}
+    utterance.onend = () => {
+      setIsSpeaking(false);
+    };
+
+    synth.speak(utterance);
+  };
+
+  return { isSpeaking, speak };
+};
+
+export default useSpeechSynthesis;
