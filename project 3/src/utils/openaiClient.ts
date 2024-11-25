@@ -6,7 +6,7 @@ export async function callOpenAI(prompt: string, apiKey: string) {
     const response = await axios.post(
       'https://api.openai.com/v1/completions',
       {
-        model: 'text-davinci-003', // Adjust the model if needed
+        model: 'text-davinci-003', // Adjust the model as needed
         prompt,
         max_tokens: 150,
         temperature: 0.7,
