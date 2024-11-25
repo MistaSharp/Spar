@@ -1,57 +1,36 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect } from 'react';
 
-export function useSpeechRecognition() {
-  const [isRecording, setIsRecording] = useState(false);
+const useSpeechRecognition = () => {
   const [transcript, setTranscript] = useState('');
-  const [recognition, setRecognition] = useState<SpeechRecognition | null>(null);
+  const [isListening, setIsListening] = useState(false);
 
   useEffect(() => {
-    if (typeof window !== 'undefined') {
-      const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
-      if (SpeechRecognition) {
-        const recognition = new SpeechRecognition();
-        recognition.continuous = true;
-        recognition.interimResults = true;
-        recognition.lang = 'en-US';
+    const recognition = new (window.SpeechRecognition || (window as any).webkitSpeechRecognition)();
+    recognition.continuous = true;
+    recognition.interimResults = false;
 
-        recognition.onresult = (event) => {
-          const current = event.resultIndex;
-          const transcript = event.results[current][0].transcript;
-          setTranscript(transcript);
-        };
+    const handleResult = (event: SpeechRecognitionEvent) => {
+      const transcriptChunk = Array.from(event.results)
+        .map((result) => result[0].transcript)
+        .join('');
+      setTranscript(transcriptChunk);
+    };
 
-        recognition.onerror = (event) => {
-          console.error('Speech recognition error:', event.error);
-          setIsRecording(false);
-        };
+    recognition.onresult = handleResult;
 
-        recognition.onend = () => {
-          setIsRecording(false);
-        };
-
-        setRecognition(recognition);
-      }
-    }
-  }, []);
-
-  const startRecording = useCallback(() => {
-    if (recognition) {
+    if (isListening) {
       recognition.start();
-      setIsRecording(true);
-    }
-  }, [recognition]);
-
-  const stopRecording = useCallback(() => {
-    if (recognition) {
+    } else {
       recognition.stop();
-      setIsRecording(false);
     }
-  }, [recognition]);
 
-  return {
-    isRecording,
-    transcript,
-    startRecording,
-    stopRecording,
-  };
-}
+    return () => {
+      recognition.stop();
+      recognition.onresult = null;
+    };
+  }, [isListening]);
+
+  return { transcript, isListening, setIsListening };
+};
+
+export default useSpeechRecognition;
